@@ -1,0 +1,24 @@
+{
+  "name": "abhyash-india",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev -- --hostname 127.0.0.1 --port 3100",
+    "lint": "npm --workspace apps/web run lint",
+    "format": "npm --workspace apps/web run format",
+    "test": "npm --workspace apps/web run test -- --run",
+    "dev:stack": "docker compose up",
+    "build": "npm --workspace apps/web run build",
+    "typecheck": "npm --workspace apps/web exec tsc -- --noEmit",
+    "verify:studio": "node scripts/verify-studio.cjs",
+    "start": "npm --workspace apps/web run start -- --hostname 127.0.0.1 --port 3100"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.23"
+    }
+  }
+}
