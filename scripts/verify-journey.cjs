@@ -35,6 +35,11 @@ const { withJourney } = require(
       viewport: { width: 1440, height: 1100 },
     });
     const errors = [];
+    let voiceStarts = 0;
+    page.on("request", (request) => {
+      if (request.url() === base + "/api/voice" && request.method() === "POST")
+        voiceStarts++;
+    });
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
       if (
@@ -47,6 +52,13 @@ const { withJourney } = require(
     await expect(
       page.getByRole("heading", { name: "Give your practice a purpose." }),
     ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Let’s practice", exact: true })
+      .click();
+    await expect(page.getByLabel("My goal")).toBeFocused();
+    await expect(page.getByLabel("My goal")).toBeInViewport();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(voiceStarts).toBe(0);
     await page.getByLabel("Your name").fill("LOCAL QA FIXTURE");
     await page.getByLabel("Target role or situation").fill("Software engineer");
     await page
@@ -71,11 +83,53 @@ const { withJourney } = require(
         "Preparation saved. Your coach can now turn this conversation into a practice plan.",
       ),
     ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Let’s practice", exact: true }),
+    ).toBeFocused();
+    await expect(
+      page.getByText("Preparation saved. You’re ready to start."),
+    ).toBeVisible();
+    await page
+      .getByText("Preparation saved · edit for your next practice", {
+        exact: true,
+      })
+      .click();
+    await page
+      .getByLabel("Target role or situation")
+      .fill("Staff software engineer");
+    await expect(
+      page.getByRole("button", { name: "Complete preparation", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Let’s practice", exact: true })
+      .click();
+    await expect(page.getByLabel("My goal")).toBeFocused();
+    await page
+      .getByRole("button", { name: "Save preparation", exact: true })
+      .click();
+    await expect(
+      page.getByText("Preparation saved. You’re ready to start."),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page.getByText("Preparation saved. You’re ready to start."),
+    ).toBeVisible();
+    expect(voiceStarts).toBe(0);
     const snapshot = await (
       await page.request.get(base + "/api/journey")
     ).json();
     const run = snapshot.runs[0];
     if (!run) throw Error("Preparation was not saved for the browser identity");
+    expect(run.speaker?.name).toBeTruthy();
+    await expect(
+      page.getByRole("heading", {
+        name: `Meet ${run.speaker.name}, your practice partner`,
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(new RegExp(`${run.speaker.gender} voice`)),
+    ).toBeVisible();
     learnerId = (await page.context().cookies()).find(
       (cookie) => cookie.name === "abhyash-learner",
     ).value;
@@ -180,11 +234,60 @@ const { withJourney } = require(
       path: path.join(root, "artifacts/journey-local-test-mobile.png"),
       fullPage: true,
     });
+    // Isolated browser fixtures verify each partner label and exported transcript.
+    const partners = require(
+      path.join(root, "apps/web/src/lib/speakers.ts"),
+    ).speakers;
+    await page.evaluate((voices) => {
+      localStorage.setItem(
+        "abhyash-sessions",
+        JSON.stringify(
+          voices.map((speaker) => ({
+            id: `local-speaker-${speaker.name}`,
+            title: `LOCAL QA ${speaker.name}`,
+            language: "en-IN",
+            scenario: "interview",
+            seconds: 10,
+            endedAt: new Date().toISOString(),
+            speaker,
+            transcript: [
+              { role: "assistant", content: "LOCAL TEST speaker transcript" },
+            ],
+          })),
+        ),
+      );
+    }, partners);
+    await page.reload();
+    await page
+      .getByRole("button", { name: "My sessions", exact: true })
+      .click();
+    for (const speaker of partners) {
+      const article = page.getByRole("article").filter({
+        has: page.getByRole("heading", {
+          name: `LOCAL QA ${speaker.name}`,
+          exact: true,
+        }),
+      });
+      await article.getByText("Read conversation", { exact: true }).click();
+      await expect(
+        article.getByText(`${speaker.name}:`, { exact: true }),
+      ).toBeVisible();
+      const exportedPromise = page.waitForEvent("download");
+      await article
+        .getByRole("button", { name: "Export", exact: true })
+        .click();
+      const exported = await exportedPromise;
+      expect(fs.readFileSync(await exported.path(), "utf8")).toContain(
+        `${speaker.name}: LOCAL TEST speaker transcript`,
+      );
+    }
     expect(errors).toEqual([]);
     console.log(
       JSON.stringify({
         verification: "LOCAL BROWSER/API TEST ONLY",
         preparation: "passed",
+        partnerPreviewAndRefresh: "passed",
+        partnerHistoryAndExport: "passed for all five names",
         persistence: "passed",
         toolEndpoint: "passed",
         idempotency: "passed",

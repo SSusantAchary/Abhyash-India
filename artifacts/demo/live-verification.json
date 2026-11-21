@@ -1,0 +1,131 @@
+{
+  "verification": "REAL AGORA VOICE-TO-TOOL TEST WITH SYNTHETIC LEARNER INPUT",
+  "startedAt": "2026-11-21T07:11:14.944Z",
+  "publicEndpointTestApproved": true,
+  "inputAudio": "abhyash-live-answer.wav",
+  "manuallyInjectedToolCalls": 0,
+  "reservedMinutesBefore": 35,
+  "runId": "9ae0a966-0758-4416-b4a5-dc336612432b",
+  "firstCoachAudioMs": 1821,
+  "inputAudioSeconds": 16.194208333333332,
+  "voiceRequestError": "Another session operation is in progress. Retry shortly. If this persists after a restart, see the recovery guide.",
+  "stopConfirmed": true,
+  "outcome": {
+    "id": "9ae0a966-0758-4416-b4a5-dc336612432b",
+    "scenario": "interview",
+    "language": "en-IN",
+    "speaker": {
+      "name": "Prathamesh",
+      "gender": "Male",
+      "voiceId": "Prathamesh"
+    },
+    "profile": {
+      "name": "Aarav · synthetic demo learner",
+      "targetRole": "Software engineer",
+      "goal": "Improve my interview answer, save specific feedback, and create a three-day plan with a reminder",
+      "background": "This is an approved hackathon pipeline verification using a synthetic spoken interview answer.",
+      "level": "practicing",
+      "allowPlan": true,
+      "allowReminder": true,
+      "allowReview": false,
+      "reminderAt": "2026-11-22T07:11:00.000Z"
+    },
+    "state": "completed",
+    "createdAt": "2026-11-21T07:11:27.511Z",
+    "actions": [
+      {
+        "id": "call_JI53vTYgfomQXthWhsfUw8N7",
+        "tool": "getLearnerContext",
+        "status": "succeeded",
+        "summary": "Retrieved your goal, preferences, and recent practice memory.",
+        "at": "2026-11-21T07:12:04.593Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_q5SAEXsWmxKg6Iw6Y3MkrWxQ",
+        "tool": "saveCoachingFeedback",
+        "status": "succeeded",
+        "summary": "Saved coaching feedback grounded in your answer.",
+        "at": "2026-11-21T07:12:06.123Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_EUMhDpNcdFpHCmbdWY1YhXEr",
+        "tool": "createPracticePlan",
+        "status": "succeeded",
+        "summary": "Created your three-day practice plan.",
+        "at": "2026-11-21T07:12:08.227Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_t3VgDYMYvwGsaUAC7pYGcaCw",
+        "tool": "schedulePractice",
+        "status": "succeeded",
+        "summary": "Scheduled an in-app reminder; calendar download is ready.",
+        "at": "2026-11-21T07:12:09.046Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      }
+    ],
+    "feedback": {
+      "strengths": [
+        "You demonstrated effective teamwork by leading a group and splitting tasks.",
+        "Delivering the project early showcases strong project management skills."
+      ],
+      "improvements": [
+        "Expand on the challenges faced during the project.",
+        "Include specific technologies used in the project."
+      ],
+      "evidenceQuote": "I split the work into milestones. Reviewed the code, we delivered our dashboard one week early.",
+      "savedAt": "2026-11-21T07:12:06.123Z"
+    },
+    "plan": {
+      "id": "2778a134-c8df-4956-966f-ca61a6617f26",
+      "summary": "This plan focuses on improving your responses by expanding details and practicing clarity in your delivery.",
+      "tasks": [
+        {
+          "id": "446ec7a6-f8b2-4d5d-9cb7-a086e46997e4",
+          "day": 1,
+          "title": "Identify Challenges",
+          "instructions": "Reflect on the challenges your team faced and how you overcame them. Write down a brief answer to discuss during the interview.",
+          "minutes": 5
+        },
+        {
+          "id": "e956576a-2bb1-4454-8a7c-cfc4c79d6ee3",
+          "day": 2,
+          "title": "List Technologies",
+          "instructions": "Think of the technologies you used in the project. Prepare to mention them in your response to showcase your technical skills.",
+          "minutes": 5
+        },
+        {
+          "id": "328310d7-1b4c-4579-9ff1-95e4e0bae880",
+          "day": 3,
+          "title": "Delivery Practice",
+          "instructions": "Practice delivering your refined answer out loud. Focus on clear and confident delivery while integrating the challenges and technologies discussed.",
+          "minutes": 5
+        }
+      ],
+      "createdAt": "2026-11-21T07:12:08.227Z"
+    },
+    "reminder": {
+      "at": "2026-11-22T07:11:00.000Z",
+      "createdAt": "2026-11-21T07:12:09.046Z"
+    },
+    "endedAt": "2026-11-21T07:12:11.022Z"
+  },
+  "reservedMinutesAfter": 40,
+  "activeAfterTest": false,
+  "calendarExportVerified": true,
+  "audio": {
+    "packetsReceived": 1427,
+    "bytesReceived": 60660,
+    "totalAudioEnergy": 0.882257166545238,
+    "totalSamplesDuration": 28.550000000001663
+  },
+  "elapsedSeconds": 55,
+  "browserErrors": [],
+  "passed": true
+}

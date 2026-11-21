@@ -5,6 +5,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { defaultProfile } from "../src/lib/journey";
 import {
+  speakers,
+  speakerByName,
+  speakersForLanguage,
+} from "../src/lib/speakers";
+import {
   beginJourney,
   calendarForRun,
   executeAgentTool,
@@ -91,6 +96,193 @@ async function prepared(overrides = {}) {
     });
   return { learner, run, workflow, call };
 }
+describe("practice partner assignment", () => {
+  it("uses exactly the five requested named voices", () => {
+    expect(speakers.map((speaker) => [speaker.name, speaker.gender])).toEqual([
+      ["Pooja", "Female"],
+      ["Prathamesh", "Male"],
+      ["Samar", "Male"],
+      ["Anisha", "Female"],
+      ["Abhinav", "Male"],
+    ]);
+    expect(speakersForLanguage("kn-IN").map((speaker) => speaker.name)).toEqual(
+      ["Pooja", "Samar"],
+    );
+  });
+  it.each(["en-IN", "hi-IN", "kn-IN"])(
+    "alternates genders across sessions using supported %s voices",
+    async (language) => {
+      const learner = newLearnerId();
+      let previousGender;
+      for (let index = 0; index < 6; index++) {
+        const run = await prepareJourney(
+          learner,
+          defaultProfile,
+          "interview",
+          language,
+        );
+        expect(
+          speakersForLanguage(language).some(
+            (speaker) => speaker.voiceId === run.speaker?.voiceId,
+          ),
+        ).toBe(true);
+        if (previousGender)
+          expect(run.speaker!.gender).not.toBe(previousGender);
+        const workflow = await beginJourney(
+          learner,
+          run.id,
+          `voice-${index}`,
+          "interview",
+          language,
+        );
+        const config = agentConfiguration(
+          "channel",
+          "token",
+          100,
+          language,
+          "interview",
+          workflow,
+        );
+        expect(config.properties.tts.params.voiceId).toBe(run.speaker!.voiceId);
+        expect(config.properties.llm.greeting_message).toContain(
+          run.speaker!.name,
+        );
+        expect(config.properties.llm.system_messages[0].content).toContain(
+          `You are ${run.speaker!.name},`,
+        );
+        previousGender = run.speaker!.gender;
+        await updateJourneyVoice(`voice-${index}`, "completed");
+      }
+    },
+  );
+  it("retains a partner through preparation edits, refreshes, and rejected starts", async () => {
+    const learner = newLearnerId();
+    const first = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    const edited = await prepareJourney(
+      learner,
+      { ...defaultProfile, targetRole: "Engineer" },
+      "interview",
+      "en-IN",
+    );
+    expect(edited.speaker).toEqual(first.speaker);
+    expect((await getJourney(learner)).runs[0].speaker).toEqual(first.speaker);
+    await beginJourney(
+      learner,
+      edited.id,
+      "rejected-session",
+      "interview",
+      "en-IN",
+    );
+    await updateJourneyVoice("rejected-session", "rejected");
+    const retry = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    expect(retry.speaker).toEqual(first.speaker);
+  });
+  it("corrects an older prepared tab when another session has already used that gender", async () => {
+    const learner = newLearnerId();
+    const first = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    const second = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    const started = await beginJourney(
+      learner,
+      first.id,
+      "first-tab",
+      "interview",
+      "en-IN",
+    );
+    await updateJourneyVoice("first-tab", "completed");
+    const following = await beginJourney(
+      learner,
+      second.id,
+      "second-tab",
+      "interview",
+      "en-IN",
+    );
+    expect(following.speaker.gender).not.toBe(started.speaker.gender);
+  });
+  it("alternates by start order when prepared tabs are used in reverse order", async () => {
+    const learner = newLearnerId();
+    const older = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    const newer = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    await beginJourney(learner, newer.id, "newer-first", "interview", "en-IN");
+    await updateJourneyVoice("newer-first", "completed");
+    const last = await beginJourney(
+      learner,
+      older.id,
+      "older-second",
+      "interview",
+      "en-IN",
+    );
+    await updateJourneyVoice("older-second", "completed");
+    const next = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    expect(next.speaker?.gender).not.toBe(last.speaker.gender);
+    expect(next).not.toHaveProperty("voiceSequence");
+  });
+  it("migrates old prepared records without renaming historical sessions", async () => {
+    const learner = newLearnerId();
+    const old = await prepareJourney(
+      learner,
+      defaultProfile,
+      "interview",
+      "en-IN",
+    );
+    await withJourney((store) => {
+      delete store.runs[0].speaker;
+    });
+    const restored = (await getJourney(learner)).runs[0];
+    expect(restored.speaker).toBeDefined();
+    expect((await getJourney(learner)).runs[0].speaker).toEqual(
+      restored.speaker,
+    );
+    const workflow = await beginJourney(
+      learner,
+      old.id,
+      "old-session",
+      "interview",
+      "en-IN",
+    );
+    expect(() =>
+      agentConfiguration("channel", "token", 100, "kn-IN", "interview", {
+        ...workflow,
+        speaker: speakerByName("Anisha")!,
+      }),
+    ).toThrow("does not support");
+  });
+});
+
 describe("agentic practice journey", () => {
   it("persists preparation, executes dependent actions, and produces a usable calendar event", async () => {
     const { learner, run, call } = await prepared({

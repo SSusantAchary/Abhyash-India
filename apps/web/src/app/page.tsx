@@ -38,8 +38,10 @@ import {
 } from "@/lib/abhyash";
 import styles from "./practice.module.css";
 import { JourneyPanel } from "@/components/journey-panel";
+import { speakerByName, type Speaker } from "@/lib/speakers";
 
 type Connection = {
+  speaker?: Speaker;
   id: string;
   appId: string;
   channel: string;
@@ -74,8 +76,43 @@ export default function PracticePage() {
   const [code, setCode] = useState("");
   const [notice, setNotice] = useState("");
   const [preparedRunId, setPreparedRunId] = useState<string | null>(null);
+  const [partner, setPartner] = useState<Speaker | undefined>();
+  const [sessionSpeaker, setSessionSpeaker] = useState<Speaker | undefined>();
+  const [preparationRequest, setPreparationRequest] = useState(0);
+  const invalidatePreparation = useCallback(() => {
+    setPreparedRunId(null);
+    setNotice("");
+  }, []);
+  const preparationSaved = useCallback(
+    (id: string, restored = false, speaker?: Speaker) => {
+      setPreparedRunId(id);
+      setPartner(speaker);
+      setError("");
+      if (restored) {
+        setNotice("");
+        return;
+      }
+      setNotice(
+        "Preparation saved. Click Let’s practice to start your voice session.",
+      );
+      requestAnimationFrame(() => {
+        const button = document.getElementById("start-practice");
+        button?.scrollIntoView({ behavior: "smooth", block: "center" });
+        button?.focus({ preventScroll: true });
+      });
+    },
+    [],
+  );
+  function showPreparation() {
+    setView("practice");
+    setError("");
+    setNotice("");
+    setPreparationRequest((request) => request + 1);
+  }
   useEffect(() => {
     setPreparedRunId(null);
+    setNotice("");
+    setPartner(undefined);
   }, [scenario, language]);
   const connection = useRef<Connection | null>(null);
   const client = useRef<IAgoraRTCClient | null>(null);
@@ -135,13 +172,18 @@ export default function PracticePage() {
       );
       if (Array.isArray(saved))
         setSessions(
-          saved.filter(
-            (item) =>
-              typeof item?.id === "string" &&
-              typeof item.title === "string" &&
-              Number.isFinite(item.seconds) &&
-              Array.isArray(item.transcript),
-          ),
+          saved
+            .filter(
+              (item) =>
+                typeof item?.id === "string" &&
+                typeof item.title === "string" &&
+                Number.isFinite(item.seconds) &&
+                Array.isArray(item.transcript),
+            )
+            .map((item) => ({
+              ...item,
+              speaker: speakerByName(item.speaker?.name || ""),
+            })),
         );
     } catch {
       /* Storage may be disabled. */
@@ -217,6 +259,7 @@ export default function PracticePage() {
           Math.round((Date.now() - startedAt.current) / 1000),
         ),
         transcript: lines.current,
+        speaker: current.speaker,
       };
       setSessions((previous) => {
         const next = [item, ...previous].slice(0, 30);
@@ -306,14 +349,16 @@ export default function PracticePage() {
 
   async function start() {
     if (busy || live) return;
-    if (!status?.ready || (status.accessCodeRequired && !code)) {
+    if (status?.accessCodeRequired && !code) {
       setSetup(true);
       return;
     }
     if (!preparedRunId) {
-      setError(
-        "Save your preparation and action permissions before starting practice.",
-      );
+      showPreparation();
+      return;
+    }
+    if (!status?.ready || (status.accessCodeRequired && !code)) {
+      setSetup(true);
       return;
     }
     setBusy(true);
@@ -356,6 +401,8 @@ export default function PracticePage() {
         runId: preparedRunId,
       })) as Connection;
       connection.current = data;
+      setPartner(data.speaker);
+      setSessionSpeaker(data.speaker);
       config.current = { language, scenario };
       startedAt.current = Date.now();
       await rtc.join(data.appId, data.channel, data.token, data.uid);
@@ -390,10 +437,14 @@ export default function PracticePage() {
       setError("Microphone could not be changed. Try ending the session.");
     }
   }
-  function download(items: TranscriptLine[], title: string) {
+  function download(
+    items: TranscriptLine[],
+    title: string,
+    speakerName = sessionSpeaker?.name || "Abhyash",
+  ) {
     const blob = new Blob(
       [
-        `${title}\nAbhyash-India\n\n${items.map((item) => `${item.role === "user" ? "You" : "Abhyash"}: ${item.content}`).join("\n\n")}`,
+        `${title}\nAbhyash-India\n\n${items.map((item) => `${item.role === "user" ? "You" : speakerName}: ${item.content}`).join("\n\n")}`,
       ],
       { type: "text/plain;charset=utf-8" },
     );
@@ -557,7 +608,8 @@ export default function PracticePage() {
               disabled={live || busy}
               mode={view === "plan" ? "review" : "prepare"}
               preparedRunId={preparedRunId}
-              onPrepared={setPreparedRunId}
+              onPrepared={preparationSaved}
+              onPreparationChanged={invalidatePreparation}
             />
           )}
           {view === "practice" && (
@@ -649,7 +701,9 @@ export default function PracticePage() {
                 disabled={live || busy}
                 mode="prepare"
                 preparedRunId={preparedRunId}
-                onPrepared={setPreparedRunId}
+                onPrepared={preparationSaved}
+                onPreparationChanged={invalidatePreparation}
+                preparationRequest={preparationRequest}
               />
               <div className={styles.sectionHeading}>
                 <div>
@@ -710,8 +764,16 @@ export default function PracticePage() {
                       <AudioLines size={25} />
                     </span>
                     <div>
-                      <h2>Meet your practice partner</h2>
-                      <p>Patient. Supportive. Always here.</p>
+                      <h2>
+                        {partner
+                          ? `Meet ${partner.name}, your practice partner`
+                          : "Meet your practice partner"}
+                      </h2>
+                      <p>
+                        {partner
+                          ? `${partner.gender} voice · ${chosenLanguage.name}`
+                          : "A different voice. The same support."}
+                      </p>
                     </div>
                   </div>
                   <label htmlFor="language" className={styles.fieldLabel}>
@@ -761,7 +823,28 @@ export default function PracticePage() {
                         : "No judgement. Just progress."}
                     </span>
                   </div>
+                  {!live && (
+                    <div
+                      id="preparation-hint"
+                      className={styles.preparationHint}
+                      role="status"
+                    >
+                      {preparedRunId ? (
+                        "Preparation saved. You’re ready to start."
+                      ) : (
+                        <>
+                          Save your goal and allowed actions before your first
+                          call.{" "}
+                          <button onClick={showPreparation}>
+                            Complete preparation
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <button
+                    id="start-practice"
+                    aria-describedby={!live ? "preparation-hint" : undefined}
                     className={live ? styles.stopButton : styles.startButton}
                     disabled={busy || (!live && Boolean(status?.active))}
                     onClick={() => (live ? endSession() : start())}
@@ -818,9 +901,16 @@ export default function PracticePage() {
                   className={error ? styles.error : styles.notice}
                 >
                   {error || notice}
-                  {error && (
-                    <button onClick={() => setSetup(true)}>Open setup</button>
-                  )}
+                  {error &&
+                    (/prepar|scenario.*changed|language.*changed/i.test(
+                      error,
+                    ) ? (
+                      <button onClick={showPreparation}>
+                        Complete preparation
+                      </button>
+                    ) : (
+                      <button onClick={() => setSetup(true)}>Open setup</button>
+                    ))}
                 </div>
               )}
               {(live || transcript.length > 0) && (
@@ -861,7 +951,9 @@ export default function PracticePage() {
                         }
                       >
                         <strong>
-                          {item.role === "user" ? "You" : "Abhyash"}
+                          {item.role === "user"
+                            ? "You"
+                            : sessionSpeaker?.name || "Abhyash"}
                         </strong>
                         <p>{item.content}</p>
                       </div>
@@ -914,7 +1006,10 @@ export default function PracticePage() {
                           item.transcript.map((line, index) => (
                             <p key={index}>
                               <strong>
-                                {line.role === "user" ? "You" : "Abhyash"}:
+                                {line.role === "user"
+                                  ? "You"
+                                  : item.speaker?.name || "Abhyash"}
+                                :
                               </strong>{" "}
                               {line.content}
                             </p>
@@ -928,7 +1023,13 @@ export default function PracticePage() {
                       <button
                         className={styles.textButton}
                         disabled={!item.transcript.length}
-                        onClick={() => download(item.transcript, item.title)}
+                        onClick={() =>
+                          download(
+                            item.transcript,
+                            item.title,
+                            item.speaker?.name || "Abhyash",
+                          )
+                        }
                       >
                         <Download size={17} />
                         Export

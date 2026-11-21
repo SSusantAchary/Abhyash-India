@@ -1,3 +1,4 @@
+import type { Speaker } from "./speakers";
 export const languages = [
   {
     id: "en-IN",
@@ -73,6 +74,7 @@ export type PracticeSession = {
   endedAt: string;
   seconds: number;
   transcript: TranscriptLine[];
+  speaker?: Speaker;
 };
 export type ServiceStatus = {
   ready: boolean;

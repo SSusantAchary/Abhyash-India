@@ -1,3 +1,4 @@
+import type { Speaker } from "./speakers";
 export type LearnerProfile = {
   name: string;
   targetRole: string;
@@ -57,6 +58,7 @@ export type ReviewRequest = {
   resolution?: string;
 };
 export type JourneyRun = {
+  speaker?: Speaker;
   id: string;
   scenario: string;
   language: string;

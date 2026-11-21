@@ -1,0 +1,126 @@
+{
+  "capturedAt": "2026-11-21T07:19:27.366Z",
+  "voiceCallsStarted": 0,
+  "images": [
+    {
+      "file": "01-studio-desktop.png",
+      "title": "Practice studio",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "02-preparation-desktop.png",
+      "title": "Preparation and action permissions",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "03-scenarios-desktop.png",
+      "title": "Scenarios and practice partner",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "04-hindi-selection-desktop.png",
+      "title": "Hindi language selection",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "05-connection-desktop.png",
+      "title": "Live connection and usage allowance",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "06-session-history-desktop.png",
+      "title": "Session history — new browser",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "07-practice-guide-desktop.png",
+      "title": "Practice guide",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "08-practice-plan-desktop.png",
+      "title": "Saved coaching feedback and three-day plan",
+      "device": "Desktop",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "09-feedback-desktop.png",
+      "title": "Feedback grounded in the spoken answer",
+      "device": "Desktop",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "10-agent-actions-desktop.png",
+      "title": "Four actual agent tool executions",
+      "device": "Desktop",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "11-prepared-profile-desktop.png",
+      "title": "Saved learner profile and preparation",
+      "device": "Desktop",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "12-studio-mobile.png",
+      "title": "Practice studio",
+      "device": "Mobile",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "13-preparation-mobile.png",
+      "title": "Preparation and action permissions",
+      "device": "Mobile",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "14-connection-mobile.png",
+      "title": "Live connection settings",
+      "device": "Mobile",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "15-practice-guide-mobile.png",
+      "title": "Practice guide",
+      "device": "Mobile",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "16-practice-plan-mobile.png",
+      "title": "Saved coaching feedback and plan",
+      "device": "Mobile",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "17-agent-actions-mobile.png",
+      "title": "Actual agent tool execution log",
+      "device": "Mobile",
+      "provenance": "Actual saved outcome from the recorded Agora + Murf demo; synthetic learner input"
+    },
+    {
+      "file": "18-login-desktop.png",
+      "title": "Sign in",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "18-signup-desktop.png",
+      "title": "Create account",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    },
+    {
+      "file": "18-setup-desktop.png",
+      "title": "Initial admin setup",
+      "device": "Desktop",
+      "provenance": "Current application UI"
+    }
+  ]
+}

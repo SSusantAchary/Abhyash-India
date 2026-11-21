@@ -10,6 +10,7 @@ import {
   type AgentWorkflow,
 } from "./journey-server";
 import { coachingTools, agentWorkflowInstructions } from "./agent-tools";
+import { speakerByName, speakersForLanguage } from "./speakers";
 
 // Reserve five whole minutes, including up to 30 seconds for startup/cleanup.
 export const LIMIT_SECONDS = 50 * 60;
@@ -213,6 +214,15 @@ export function agentConfiguration(
   const scenario = scenarios.find((item) => item.id === scenarioId);
   if (!language || !scenario)
     throw new VoiceError("Choose a supported language and practice scenario.");
+  const speaker = workflow?.speaker || speakerByName(language.voice)!;
+  if (
+    !speakersForLanguage(languageId).some(
+      (item) => item.voiceId === speaker.voiceId,
+    )
+  )
+    throw new VoiceError(
+      "This practice partner does not support the selected language.",
+    );
   return {
     name: channel,
     properties: {
@@ -248,15 +258,15 @@ export function agentConfiguration(
         system_messages: [
           {
             role: "system",
-            content: `You are Abhyash, a patient voice practice coach for India. Speak in ${language.name}. Understand English code-switching, but follow the selected language. ${scenario.prompt} Keep turns to two or three short sentences. Ask one question at a time. After each answer, give one concrete, kind correction and a natural example. Never invent scores or claim to measure eye contact or pronunciation from text. At the end offer a three-step practice plan. Do not include markdown; your words are spoken aloud. ${workflow ? agentWorkflowInstructions + "\nLearner preparation: " + JSON.stringify(workflow.context) : ""}`,
+            content: `You are ${speaker.name}, a patient ${speaker.gender.toLowerCase()} voice practice coach for Abhyash-India. Introduce yourself as ${speaker.name}. Speak in ${language.name}. Understand English code-switching, but follow the selected language. ${scenario.prompt} Keep turns to two or three short sentences. Ask one question at a time. After each answer, give one concrete, kind correction and a natural example. Never invent scores or claim to measure eye contact or pronunciation from text. At the end offer a three-step practice plan. Do not include markdown; your words are spoken aloud. ${workflow ? agentWorkflowInstructions + "\nLearner preparation: " + JSON.stringify(workflow.context) : ""}`,
           },
         ],
         greeting_message:
           language.id === "hi-IN"
-            ? "नमस्ते! मैं अभ्यास हूँ। आज आप किस चीज़ की तैयारी करना चाहते हैं?"
+            ? `नमस्ते! मैं ${speaker.name} हूँ। आज आप किस चीज़ की तैयारी करना चाहते हैं?`
             : language.id === "kn-IN"
-              ? "ನಮಸ್ಕಾರ! ನಾನು ಅಭ್ಯಾಸ. ಇಂದು ನೀವು ಏನನ್ನು ಅಭ್ಯಾಸ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?"
-              : "Hi, I'm Abhyash, your practice partner. What would you like to work on today?",
+              ? `ನಮಸ್ಕಾರ! ನಾನು ${speaker.name}. ಇಂದು ನೀವು ಏನನ್ನು ಅಭ್ಯಾಸ ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?`
+              : `Hi, I'm ${speaker.name}, your practice partner. What would you like to work on today?`,
         failure_message: "Could you say that again?",
         max_history: 24,
         params: {
@@ -269,7 +279,7 @@ export function agentConfiguration(
         params: {
           api_key: process.env.MURF_API_KEY,
           base_url: "wss://global.api.murf.ai/v1/speech/stream-input",
-          voiceId: language.voice,
+          voiceId: speaker.voiceId,
           locale: language.id,
           model: "falcon-2.1",
           sample_rate: 24000,
@@ -365,6 +375,9 @@ export async function startSession(
         channel,
         uid,
         token: clientToken,
+        speaker:
+          workflow?.speaker ||
+          speakerByName(languages.find((item) => item.id === language)!.voice),
         deadline: ledger.active.deadline,
       };
     } catch (error) {

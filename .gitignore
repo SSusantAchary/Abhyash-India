@@ -43,3 +43,7 @@ models/
 
 # Abhyash live API usage ledger (keep across restarts)
 .abhyash/
+
+# Generated demo recordings (share the MP4 separately from source code)
+artifacts/demo/*.webm
+artifacts/demo/*.mp4

@@ -21,16 +21,16 @@ Open **http://127.0.0.1:3100**. If `.env.local` already exists, edit it instead 
 
 Required settings:
 
-| Setting | Source |
-| --- | --- |
-| `AGORA_APP_ID` | Agora project with Conversational AI enabled |
+| Setting                 | Source                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `AGORA_APP_ID`          | Agora project with Conversational AI enabled                                    |
 | `AGORA_APP_CERTIFICATE` | The same project's App Certificate; enable certificate-based RTC authentication |
-| `AGORA_CUSTOMER_ID` | Agora REST customer ID |
-| `AGORA_CUSTOMER_SECRET` | Agora REST customer secret |
-| `MURF_API_KEY` | Murf API key |
-| `ABHYASH_ACCESS_CODE` | Choose a strong private demo code; required in production |
+| `AGORA_CUSTOMER_ID`     | Agora REST customer ID                                                          |
+| `AGORA_CUSTOMER_SECRET` | Agora REST customer secret                                                      |
+| `MURF_API_KEY`          | Murf API key                                                                    |
+| `ABHYASH_ACCESS_CODE`   | Choose a strong private demo code; required in production                       |
 
-Built-in ARES speech recognition and Agora-managed OpenAI `gpt-4o-mini` are used by default. ARES uses its native configuration without a `credential_mode` override, because some Agora project SKUs reject managed ARES. Enable managed model access for the project. Alternatively set `LLM_API_KEY`, `LLM_BASE_URL` (full chat completions endpoint), and `LLM_MODEL` for an OpenAI-compatible provider. Murf uses `falcon-2.1`, Anisha for Indian English and Pooja for Hindi/Kannada. Language selections configure recognition, the coach prompt, and speech output together. A real English browser voice-to-tool run was verified on November 21, 2026. Hindi/Kannada speech quality and human pronunciation assessment still need native-speaker testing.
+Built-in ARES speech recognition and Agora-managed OpenAI `gpt-4o-mini` are used by default. ARES uses its native configuration without a `credential_mode` override, because some Agora project SKUs reject managed ARES. Enable managed model access for the project. Alternatively set `LLM_API_KEY`, `LLM_BASE_URL` (full chat completions endpoint), and `LLM_MODEL` for an OpenAI-compatible provider. Murf uses `falcon-2.1`. Each learner’s practice sessions alternate female and male partners, with a random supported voice within that gender: Pooja/Anisha (female) and Prathamesh/Samar/Abhinav (male) for Indian English and Hindi; Pooja/Samar for Kannada. The assigned name and voice stay consistent through preparation, spoken introduction, transcript, history, and export. Language selections configure recognition, the coach prompt, and speech output together. A real English browser voice-to-tool run was verified on November 21, 2026. Hindi/Kannada speech quality and human pronunciation assessment still need native-speaker testing.
 
 The Connection setup panel reports missing settings without making billable API requests. Live RTC audio, ASR, non-silent coach audio, tool execution, saved outcomes, calendar export, and agent shutdown were verified in a short test with synthetic learner speech. Diagnostic agent runs may incur a small amount of actual usage; consult the provider console for billed usage.
 

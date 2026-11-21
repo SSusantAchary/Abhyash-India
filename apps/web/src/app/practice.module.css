@@ -1490,3 +1490,25 @@
     transition: none !important;
   }
 }
+
+.preparationHint {
+  margin: 0 0 13px;
+  padding: 12px;
+  border: 1px solid #e6daf1;
+  border-radius: 8px;
+  background: #f8f3fd;
+  color: #725385;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.preparationHint button {
+  display: block;
+  padding: 3px 0 0;
+  border: 0;
+  background: none;
+  color: #7045a6;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

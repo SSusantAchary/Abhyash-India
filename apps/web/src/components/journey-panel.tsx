@@ -15,6 +15,7 @@ import {
   type LearnerProfile,
 } from "@/lib/journey";
 import styles from "./journey-panel.module.css";
+import type { Speaker } from "@/lib/speakers";
 
 type Props = {
   code: string;
@@ -24,7 +25,9 @@ type Props = {
   disabled: boolean;
   mode: "prepare" | "review";
   preparedRunId: string | null;
-  onPrepared: (id: string) => void;
+  onPrepared: (id: string, restored?: boolean, speaker?: Speaker) => void;
+  onPreparationChanged?: () => void;
+  preparationRequest?: number;
 };
 export function JourneyPanel({
   code,
@@ -35,6 +38,8 @@ export function JourneyPanel({
   mode,
   preparedRunId,
   onPrepared,
+  onPreparationChanged,
+  preparationRequest = 0,
 }: Props) {
   const [snapshot, setSnapshot] = useState<JourneySnapshot | null>(null);
   const [profile, setProfile] = useState<LearnerProfile>({ ...defaultProfile });
@@ -44,6 +49,34 @@ export function JourneyPanel({
   const [selectedRun, setSelectedRun] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
   const dirty = useRef(false);
+  const preparationPanel = useRef<HTMLElement>(null);
+  const preparationDetails = useRef<HTMLDetailsElement>(null);
+  const goalField = useRef<HTMLTextAreaElement>(null);
+  const restoredPreparation = useRef(false);
+  useEffect(() => {
+    if (!snapshot || mode !== "prepare" || restoredPreparation.current) return;
+    restoredPreparation.current = true;
+    if (dirty.current) return;
+    const saved = snapshot.runs[0];
+    if (
+      saved?.state === "prepared" &&
+      saved.scenario === scenario &&
+      saved.language === language &&
+      JSON.stringify(saved.profile) === JSON.stringify(snapshot.profile)
+    ) {
+      setSelectedRun(saved.id);
+      onPrepared(saved.id, true, saved.speaker);
+    }
+  }, [snapshot, mode, scenario, language, onPrepared]);
+  useEffect(() => {
+    if (!preparationRequest || mode !== "prepare") return;
+    if (preparationDetails.current) preparationDetails.current.open = true;
+    preparationPanel.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    goalField.current?.focus({ preventScroll: true });
+  }, [preparationRequest, mode]);
   const loading = useRef(false);
   const revision = useRef(0);
   const load = useCallback(async () => {
@@ -111,6 +144,8 @@ export function JourneyPanel({
     value: LearnerProfile[K],
   ) => {
     dirty.current = true;
+    onPreparationChanged?.();
+    setMessage("");
     setProfile((previous) => ({ ...previous, [key]: value }));
   };
   async function prepare() {
@@ -125,7 +160,7 @@ export function JourneyPanel({
         language,
       })) as JourneyRun;
       dirty.current = false;
-      onPrepared(run.id);
+      onPrepared(run.id, false, run.speaker);
       setSelectedRun(run.id);
       setMessage(
         "Preparation saved. Your coach can now turn this conversation into a practice plan.",
@@ -211,6 +246,7 @@ export function JourneyPanel({
         <div>
           <span className={styles.kicker}>
             {item.language} · {item.state}
+            {item.speaker && ` · ${item.speaker.name} · ${item.speaker.gender}`}
           </span>
           <h3>{item.profile.goal}</h3>
         </div>
@@ -384,6 +420,8 @@ export function JourneyPanel({
   );
   return (
     <section
+      ref={preparationPanel}
+      id={mode === "prepare" ? "practice-preparation" : undefined}
       className={styles.panel}
       aria-label={
         mode === "prepare"
@@ -416,7 +454,11 @@ export function JourneyPanel({
         </button>
       </div>
       {mode === "prepare" && (
-        <details open={!preparedRunId && !live} className={styles.preparation}>
+        <details
+          ref={preparationDetails}
+          open={!preparedRunId && !live}
+          className={styles.preparation}
+        >
           <summary>
             <BookOpen size={17} />
             {preparedRunId
@@ -447,6 +489,7 @@ export function JourneyPanel({
             <label className={styles.wide}>
               My goal
               <textarea
+                ref={goalField}
                 value={profile.goal}
                 onChange={(event) => change("goal", event.target.value)}
                 maxLength={500}

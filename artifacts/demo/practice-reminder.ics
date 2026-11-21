@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Abhyash India//Practice//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:9ae0a966-0758-4416-b4a5-dc336612432b@abhyash.local
+DTSTAMP:20261121T071223Z
+DTSTART:20261122T071100Z
+DTEND:20261122T071600Z
+SUMMARY:Abhyash practice: Identify Challenges
+DESCRIPTION:Reflect on the challenges your team faced and how you overcame them. Write down a brief answer to discuss during the interview.
+BEGIN:VALARM
+TRIGGER:-PT10M
+ACTION:DISPLAY
+DESCRIPTION:Time for your speaking practice
+END:VALARM
+END:VEVENT
+END:VCALENDAR

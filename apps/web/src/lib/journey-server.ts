@@ -14,12 +14,15 @@ import {
   type PracticeTask,
 } from "./journey";
 import { languages, scenarios } from "./abhyash";
+import { chooseSpeaker } from "./speaker-server";
+import { speakerByName, speakersForLanguage } from "./speakers";
 
 type StoredRun = JourneyRun & {
   learnerId: string;
   capabilityHash?: string;
   capabilityExpires?: number;
   voiceId?: string;
+  voiceSequence?: number;
   receipts: Record<string, { fingerprint: string; result: unknown }>;
 };
 type Store = {
@@ -179,22 +182,53 @@ function publicRun(run: StoredRun): JourneyRun {
     capabilityHash: _hash,
     capabilityExpires: _expires,
     voiceId: _voice,
+    voiceSequence: _sequence,
     receipts: _receipts,
     ...visible
   } = run;
   return structuredClone(visible);
 }
+function previousSpeakerGender(store: Store, learnerId: string) {
+  const previous = store.runs
+    .filter((run) => run.learnerId === learnerId && run.state !== "prepared")
+    .sort(
+      (a, b) =>
+        (b.voiceSequence || 0) - (a.voiceSequence || 0) ||
+        Date.parse(b.endedAt || b.createdAt) -
+          Date.parse(a.endedAt || a.createdAt),
+    )[0];
+  return (
+    previous?.speaker?.gender ||
+    speakerByName(
+      languages.find((language) => language.id === previous?.language)?.voice ||
+        "",
+    )?.gender
+  );
+}
 export async function getJourney(learnerId: string): Promise<JourneySnapshot> {
   const toolsConfigured = Boolean(await toolsBaseUrl());
-  return withJourney((store) => ({
-    profile: store.learners[learnerId] || { ...defaultProfile },
-    runs: store.runs
-      .filter((run) => run.learnerId === learnerId)
-      .slice(-30)
-      .reverse()
-      .map(publicRun),
-    toolsConfigured,
-  }));
+  return withJourney((store) => {
+    for (const run of store.runs) {
+      if (
+        run.learnerId === learnerId &&
+        run.state === "prepared" &&
+        !run.speaker
+      )
+        run.speaker = chooseSpeaker(
+          run.language,
+          previousSpeakerGender(store, learnerId),
+        );
+    }
+    return {
+      profile: store.learners[learnerId] || { ...defaultProfile },
+      runs: store.runs
+        .filter((run) => run.learnerId === learnerId)
+        .slice(-30)
+        .reverse()
+        .map(publicRun),
+      toolsConfigured,
+    };
+  });
 }
 export async function prepareJourney(
   learnerId: string,
@@ -212,11 +246,21 @@ export async function prepareJourney(
     );
   return withJourney((store) => {
     store.learners[learnerId] = profile;
+    const latest = [...store.runs]
+      .reverse()
+      .find((run) => run.learnerId === learnerId);
+    const speaker =
+      latest?.state === "prepared" &&
+      latest.language === language &&
+      latest.speaker
+        ? latest.speaker
+        : chooseSpeaker(language, previousSpeakerGender(store, learnerId));
     const run: StoredRun = {
       id: randomUUID(),
       learnerId,
       scenario,
       language,
+      speaker,
       profile: { ...profile },
       state: "prepared",
       createdAt: new Date().toISOString(),
@@ -281,9 +325,25 @@ export async function beginJourney(
         409,
       );
     const capability = randomBytes(32).toString("hex");
+    const previousGender = previousSpeakerGender(store, learnerId);
+    if (
+      !run.speaker ||
+      run.speaker.gender === previousGender ||
+      !speakersForLanguage(language).some(
+        (speaker) => speaker.voiceId === run.speaker?.voiceId,
+      )
+    )
+      run.speaker = chooseSpeaker(language, previousGender);
     run.capabilityHash = hash(capability);
     run.capabilityExpires = Date.now() + 330_000;
     run.voiceId = voiceId;
+    run.voiceSequence =
+      Math.max(
+        0,
+        ...store.runs
+          .filter((item) => item.learnerId === learnerId)
+          .map((item) => item.voiceSequence || 0),
+      ) + 1;
     run.state = "live";
     const recent = store.runs
       .filter(
@@ -303,6 +363,7 @@ export async function beginJourney(
       runId,
       toolsUrl,
       capability,
+      speaker: run.speaker,
       context: { profile: run.profile, recentPractice: recent },
     };
   });
