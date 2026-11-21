@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { JourneyError, validLearnerId } from "@/lib/journey-server";
 import {
   authorize,
   serviceStatus,
@@ -16,11 +18,13 @@ function failure(error: unknown) {
   return reply(
     {
       error:
-        error instanceof VoiceError
+        error instanceof VoiceError || error instanceof JourneyError
           ? error.message
           : "Voice service is temporarily unavailable. Check the server and retry.",
     },
-    error instanceof VoiceError ? error.status : 503,
+    error instanceof VoiceError || error instanceof JourneyError
+      ? error.status
+      : 503,
   );
 }
 
@@ -45,8 +49,24 @@ export async function POST(request: Request) {
       body.action === "start" &&
       typeof body.language === "string" &&
       typeof body.scenario === "string"
-    )
-      return reply(await startSession(body.language, body.scenario));
+    ) {
+      const learnerId = (await cookies()).get("abhyash-learner")?.value;
+      if (
+        body.runId &&
+        (!validLearnerId(learnerId) || typeof body.runId !== "string")
+      )
+        throw new VoiceError(
+          "Save your preparation before starting practice.",
+          400,
+        );
+      return reply(
+        await startSession(
+          body.language,
+          body.scenario,
+          body.runId ? { learnerId: learnerId!, runId: body.runId } : undefined,
+        ),
+      );
+    }
     if (body.action === "stop" && typeof body.id === "string")
       return reply(await stopSession(body.id));
     if (body.action === "recover")

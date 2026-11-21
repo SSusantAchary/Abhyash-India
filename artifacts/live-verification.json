@@ -1,0 +1,125 @@
+{
+  "verification": "REAL AGORA VOICE-TO-TOOL TEST WITH SYNTHETIC LEARNER INPUT",
+  "startedAt": "2026-11-21T06:32:43.366Z",
+  "publicEndpointTestApproved": true,
+  "inputAudio": "abhyash-live-answer.wav",
+  "manuallyInjectedToolCalls": 0,
+  "reservedMinutesBefore": 20,
+  "runId": "f89200a4-e3da-424a-bc36-41bb0b7fb632",
+  "firstCoachAudioMs": 1864,
+  "inputAudioSeconds": 16.194208333333332,
+  "stopConfirmed": true,
+  "outcome": {
+    "id": "f89200a4-e3da-424a-bc36-41bb0b7fb632",
+    "scenario": "interview",
+    "language": "en-IN",
+    "profile": {
+      "name": "Live demo: synthetic learner",
+      "targetRole": "Software engineer",
+      "goal": "Improve my interview answer, save specific feedback, and create a three-day plan with a reminder",
+      "background": "This is an approved hackathon pipeline verification using a synthetic spoken interview answer.",
+      "level": "practicing",
+      "allowPlan": true,
+      "allowReminder": true,
+      "allowReview": false,
+      "reminderAt": "2026-11-22T06:32:00.000Z"
+    },
+    "state": "completed",
+    "createdAt": "2026-11-21T06:32:43.877Z",
+    "actions": [
+      {
+        "id": "call_Kp5Q4Xdrc9LLu54YMAL7sQaY",
+        "tool": "createPracticePlan",
+        "status": "failed",
+        "summary": "Save coaching feedback from a real answer before creating a plan.",
+        "at": "2026-11-21T06:33:12.739Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_WhbBTZgZ1BGXUDFeUHDuPovv",
+        "tool": "saveCoachingFeedback",
+        "status": "succeeded",
+        "summary": "Saved coaching feedback grounded in your answer.",
+        "at": "2026-11-21T06:33:12.771Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_dqQDEtYYDTOzEgzEuo1wtl8e",
+        "tool": "createPracticePlan",
+        "status": "succeeded",
+        "summary": "Created your three-day practice plan.",
+        "at": "2026-11-21T06:33:15.161Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      },
+      {
+        "id": "call_s1l5leibHEDw7YeSzYL1oPFw",
+        "tool": "schedulePractice",
+        "status": "succeeded",
+        "summary": "Scheduled an in-app reminder; calendar download is ready.",
+        "at": "2026-11-21T06:33:15.984Z",
+        "latencyMs": 0,
+        "origin": "agent"
+      }
+    ],
+    "feedback": {
+      "strengths": [
+        "Great leadership in managing a team and splitting tasks effectively.",
+        "Demonstrated ability to meet deadlines by delivering early."
+      ],
+      "improvements": [
+        "Try to elaborate more on specific challenges faced and how you overcame them.",
+        "Include the impact of the early delivery on the project or team."
+      ],
+      "evidenceQuote": "I led a team of three developers. I split the work into milestones. Reviewed the code, and we delivered our dashboard one week early.",
+      "savedAt": "2026-11-21T06:33:12.771Z"
+    },
+    "plan": {
+      "id": "f6ea6321-7637-43ad-897c-7bbb7b4bc45f",
+      "summary": "This plan focuses on strengthening your situational and behavioral interview responses.",
+      "tasks": [
+        {
+          "id": "3ebbcd75-be4c-446c-be88-db54701de7a2",
+          "day": 1,
+          "title": "Challenge Response Practice",
+          "instructions": "Practice explaining challenges and how you overcame them in your project, focusing on the impact of early delivery.",
+          "minutes": 10
+        },
+        {
+          "id": "0a2e2877-7a59-497b-998c-7049b2f6d26d",
+          "day": 2,
+          "title": "Mock Interview Session",
+          "instructions": "Simulate an interview scenario with a friend or mentor, using specific examples like teamwork and leadership.",
+          "minutes": 10
+        },
+        {
+          "id": "035ef81f-03b5-45a3-9b28-9d14244f6162",
+          "day": 3,
+          "title": "Self-Review of Project Explanation",
+          "instructions": "Record yourself explaining your role in the project, then review the recording to identify areas of improvement.",
+          "minutes": 10
+        }
+      ],
+      "createdAt": "2026-11-21T06:33:15.161Z"
+    },
+    "reminder": {
+      "at": "2026-11-22T06:32:00.000Z",
+      "createdAt": "2026-11-21T06:33:15.984Z"
+    },
+    "endedAt": "2026-11-21T06:33:17.416Z"
+  },
+  "reservedMinutesAfter": 25,
+  "activeAfterTest": false,
+  "calendarExportVerified": true,
+  "audio": {
+    "packetsReceived": 1438,
+    "bytesReceived": 66531,
+    "totalAudioEnergy": 1.0997368020017377,
+    "totalSamplesDuration": 28.800000000001702
+  },
+  "elapsedSeconds": 31,
+  "browserErrors": [],
+  "passed": true
+}

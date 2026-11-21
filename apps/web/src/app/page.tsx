@@ -37,6 +37,7 @@ import {
   type TranscriptLine,
 } from "@/lib/abhyash";
 import styles from "./practice.module.css";
+import { JourneyPanel } from "@/components/journey-panel";
 
 type Connection = {
   id: string;
@@ -46,7 +47,7 @@ type Connection = {
   token: string;
   deadline: number;
 };
-type View = "practice" | "sessions" | "guide";
+type View = "practice" | "sessions" | "guide" | "plan";
 const clock = (seconds: number) =>
   `${Math.floor(Math.max(0, seconds) / 60)
     .toString()
@@ -72,6 +73,10 @@ export default function PracticePage() {
   const [setup, setSetup] = useState(false);
   const [code, setCode] = useState("");
   const [notice, setNotice] = useState("");
+  const [preparedRunId, setPreparedRunId] = useState<string | null>(null);
+  useEffect(() => {
+    setPreparedRunId(null);
+  }, [scenario, language]);
   const connection = useRef<Connection | null>(null);
   const client = useRef<IAgoraRTCClient | null>(null);
   const mic = useRef<IMicrophoneAudioTrack | null>(null);
@@ -225,6 +230,7 @@ export default function PracticePage() {
         return next;
       });
       connection.current = null;
+      setPreparedRunId(null);
     }
     setBusy(false);
     ending.current = false;
@@ -304,6 +310,12 @@ export default function PracticePage() {
       setSetup(true);
       return;
     }
+    if (!preparedRunId) {
+      setError(
+        "Save your preparation and action permissions before starting practice.",
+      );
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -341,6 +353,7 @@ export default function PracticePage() {
         action: "start",
         language,
         scenario,
+        runId: preparedRunId,
       })) as Connection;
       connection.current = data;
       config.current = { language, scenario };
@@ -433,6 +446,14 @@ export default function PracticePage() {
               <span className={styles.count}>{sessions.length}</span>
             )}
           </button>
+          <button
+            aria-label="My practice plan"
+            className={view === "plan" ? styles.navActive : styles.navButton}
+            onClick={() => setView("plan")}
+          >
+            <BookOpen size={19} />
+            My practice plan
+          </button>
           <Link href="/dashboard" className={styles.navButton}>
             <Presentation size={19} />
             Recording analytics
@@ -475,11 +496,13 @@ export default function PracticePage() {
           <span>
             Practice studio <span className={styles.topbarDivider}>/</span>{" "}
             <strong>
-              {view === "sessions"
-                ? "My sessions"
-                : view === "guide"
-                  ? "Practice guide"
-                  : "Your daily dose of confidence"}
+              {view === "plan"
+                ? "My practice plan"
+                : view === "sessions"
+                  ? "My sessions"
+                  : view === "guide"
+                    ? "Practice guide"
+                    : "Your daily dose of confidence"}
             </strong>
           </span>
           <button
@@ -497,7 +520,9 @@ export default function PracticePage() {
                 MADE FOR YOUR VOICE. MADE FOR INDIA.
               </p>
               <h1>
-                {view === "sessions" ? (
+                {view === "plan" ? (
+                  "Your conversation, turned into progress."
+                ) : view === "sessions" ? (
                   "Every conversation counts."
                 ) : view === "guide" ? (
                   "Small steps. Stronger voice."
@@ -509,11 +534,13 @@ export default function PracticePage() {
                 )}
               </h1>
               <p>
-                {view === "sessions"
-                  ? "Revisit your practice, keep the feedback, and see how far you’ve come."
-                  : view === "guide"
-                    ? "A simple routine to make speaking feel a little more natural."
-                    : "A safe space to speak, make mistakes, and get a little better. Every day."}
+                {view === "plan"
+                  ? "Your saved feedback, daily drills, reminders, and completed actions."
+                  : view === "sessions"
+                    ? "Revisit your practice, keep the feedback, and see how far you’ve come."
+                    : view === "guide"
+                      ? "A simple routine to make speaking feel a little more natural."
+                      : "A safe space to speak, make mistakes, and get a little better. Every day."}
               </p>
             </div>
             <span className={styles.hackathonBadge}>
@@ -521,6 +548,18 @@ export default function PracticePage() {
               Agora + Murf
             </span>
           </div>
+          {view === "plan" && (
+            <JourneyPanel
+              code={code}
+              scenario={scenario}
+              language={language}
+              live={live}
+              disabled={live || busy}
+              mode={view === "plan" ? "review" : "prepare"}
+              preparedRunId={preparedRunId}
+              onPrepared={setPreparedRunId}
+            />
+          )}
           {view === "practice" && (
             <>
               <section className={styles.hero}>
@@ -602,6 +641,16 @@ export default function PracticePage() {
                   </p>
                 </div>
               </section>
+              <JourneyPanel
+                code={code}
+                scenario={scenario}
+                language={language}
+                live={live}
+                disabled={live || busy}
+                mode="prepare"
+                preparedRunId={preparedRunId}
+                onPrepared={setPreparedRunId}
+              />
               <div className={styles.sectionHeading}>
                 <div>
                   <h2>What are we practicing today?</h2>

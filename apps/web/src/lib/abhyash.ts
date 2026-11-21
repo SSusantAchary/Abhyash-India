@@ -82,4 +82,5 @@ export type ServiceStatus = {
   limitSeconds: number;
   active: boolean;
   recoveryRequired: boolean;
+  toolsConfigured?: boolean;
 };

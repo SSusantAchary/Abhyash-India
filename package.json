@@ -14,7 +14,12 @@
     "build": "npm --workspace apps/web run build",
     "typecheck": "npm --workspace apps/web exec tsc -- --noEmit",
     "verify:studio": "node scripts/verify-studio.cjs",
-    "start": "npm --workspace apps/web run start -- --hostname 127.0.0.1 --port 3100"
+    "start": "npm --workspace apps/web run start -- --hostname 127.0.0.1 --port 3100",
+    "tools:install": "node scripts/install-tools-bridge.mjs",
+    "tools:dev": "node scripts/tools-bridge.mjs",
+    "demo": "node scripts/demo.mjs",
+    "verify:journey": "node scripts/verify-journey.cjs",
+    "verify:live": "node scripts/verify-live-journey.cjs"
   },
   "overrides": {
     "next": {

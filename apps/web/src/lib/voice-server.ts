@@ -3,6 +3,13 @@ import { mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import { RtcTokenBuilder, RtcRole } from "agora-token";
 import { languages, scenarios } from "./abhyash";
+import {
+  beginJourney,
+  toolsBaseUrl,
+  updateJourneyVoice,
+  type AgentWorkflow,
+} from "./journey-server";
+import { coachingTools, agentWorkflowInstructions } from "./agent-tools";
 
 // Reserve five whole minutes, including up to 30 seconds for startup/cleanup.
 export const LIMIT_SECONDS = 50 * 60;
@@ -200,6 +207,7 @@ export function agentConfiguration(
   uid: number,
   languageId: string,
   scenarioId: string,
+  workflow?: AgentWorkflow,
 ) {
   const language = languages.find((item) => item.id === languageId);
   const scenario = scenarios.find((item) => item.id === scenarioId);
@@ -214,11 +222,20 @@ export function agentConfiguration(
       remote_rtc_uids: [String(uid)],
       enable_string_uid: false,
       idle_timeout: 10,
+      ...(workflow ? { advanced_features: { enable_tools: true } } : {}),
       asr: {
         vendor: "ares",
         language: language.asr,
       },
       llm: {
+        ...(workflow
+          ? {
+              tools: coachingTools(workflow),
+              template_variables: {
+                coaching_capability: `Bearer ${workflow.capability}`,
+              },
+            }
+          : {}),
         credential_mode: process.env.LLM_API_KEY ? "byok" : "managed",
         vendor: "openai",
         style: "openai",
@@ -231,7 +248,7 @@ export function agentConfiguration(
         system_messages: [
           {
             role: "system",
-            content: `You are Abhyash, a patient voice practice coach for India. Speak in ${language.name}. Understand English code-switching, but follow the selected language. ${scenario.prompt} Keep turns to two or three short sentences. Ask one question at a time. After each answer, give one concrete, kind correction and a natural example. Never invent scores or claim to measure eye contact or pronunciation from text. At the end offer a three-step practice plan. Do not include markdown; your words are spoken aloud.`,
+            content: `You are Abhyash, a patient voice practice coach for India. Speak in ${language.name}. Understand English code-switching, but follow the selected language. ${scenario.prompt} Keep turns to two or three short sentences. Ask one question at a time. After each answer, give one concrete, kind correction and a natural example. Never invent scores or claim to measure eye contact or pronunciation from text. At the end offer a three-step practice plan. Do not include markdown; your words are spoken aloud. ${workflow ? agentWorkflowInstructions + "\nLearner preparation: " + JSON.stringify(workflow.context) : ""}`,
           },
         ],
         greeting_message:
@@ -264,7 +281,11 @@ export function agentConfiguration(
   };
 }
 
-export async function startSession(language: string, scenario: string) {
+export async function startSession(
+  language: string,
+  scenario: string,
+  journey?: { learnerId: string; runId: string },
+) {
   if (missingCredentials().length)
     throw new VoiceError(
       "Live practice needs server credentials. Open Connection setup for the missing settings.",
@@ -275,6 +296,15 @@ export async function startSession(language: string, scenario: string) {
   return withLedger(async (ledger, save) => {
     reserve(ledger);
     const id = randomBytes(24).toString("hex");
+    const workflow = journey
+      ? await beginJourney(
+          journey.learnerId,
+          journey.runId,
+          id,
+          scenario,
+          language,
+        )
+      : undefined;
     const channel = `abhyash_${randomBytes(12).toString("hex")}`;
     const uid = randomInt(100, 2147483647);
     const appId = process.env.AGORA_APP_ID!,
@@ -301,7 +331,14 @@ export async function startSession(language: string, scenario: string) {
     try {
       const result = await agoraRequest(
         "/join",
-        agentConfiguration(channel, agentToken, uid, language, scenario),
+        agentConfiguration(
+          channel,
+          agentToken,
+          uid,
+          language,
+          scenario,
+          workflow,
+        ),
       );
       if (typeof result.agent_id !== "string" || !result.agent_id)
         throw new Error("No agent ID");
@@ -336,11 +373,13 @@ export async function startSession(language: string, scenario: string) {
         delete ledger.active;
         ledger.reservedSeconds -= RESERVATION_SECONDS;
         await save();
+        if (workflow) await updateJourneyVoice(id, "rejected");
         throw error;
       }
       // A timeout may have created an agent. Keep the reservation and block new calls.
       ledger.active.state = "uncertain";
       await save();
+      if (workflow) await updateJourneyVoice(id, "uncertain").catch(() => {});
       throw new VoiceError(
         "Agent startup could not be confirmed. The allowance remains reserved. Use Recover connection before trying again.",
         502,
@@ -373,6 +412,7 @@ async function stopActive(ledger: Ledger, save: () => Promise<void>) {
     ) {
       delete ledger.active;
       await save();
+      await updateJourneyVoice(active.id, "completed");
       return;
     }
     if (!found)
@@ -399,6 +439,7 @@ async function stopActive(ledger: Ledger, save: () => Promise<void>) {
   }
   delete ledger.active;
   await save();
+  await updateJourneyVoice(active.id, "completed");
 }
 
 export async function stopSession(id?: string, recover = false) {
@@ -412,6 +453,7 @@ export async function stopSession(id?: string, recover = false) {
 }
 
 export async function serviceStatus() {
+  const toolsConfigured = Boolean(await toolsBaseUrl());
   return withLedger(async (ledger, save) => {
     if (
       ledger.active &&
@@ -433,6 +475,7 @@ export async function serviceStatus() {
         (ledger.active.state === "uncertain" ||
           Date.now() >= ledger.active.deadline),
       ),
+      toolsConfigured,
     };
   });
 }
